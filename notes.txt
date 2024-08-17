@@ -1,0 +1,93 @@
+Some files are just a partition
+Other files, like MacOS8.1.toast, have a partition table, but no drivers.
+
+Sector = 512 bytes
+
+Info for MacOS8.1.toast
+Partitions : 2
+
+Signature1 [1] : P
+Signature2 [1] : M
+reserved [2] : 0
+Partitions [4] : 2
+Start [4] : sector 0000 0001
+Length [4] : 2 sectors
+Partition Name [32] : MRKS
+Partition Type [32] : Apple_partition_map
+Start of data in partition [4] : 0
+Size of data in partition [4] :0000 0002
+Status of Partition [4] : 0000 0013
+Boot code sector [4] : 0
+Boot code length [4] : 0
+Bootloader address [4] : 0
+reserved [4] : 0
+boot code entry point [4] : 0
+reserved [4] : 0
+boot code checksum [4] : 0
+processor type [16] : 0
+reserved [376] : 0
+
+Signature1 [1] : P
+Signature2 [1] : M
+reserved [2] : 0
+Partitions [4] : 2
+Start [4] : sector 0000 0025
+Length [4] : 000b 4475 sectors (which is approx. 361MB)
+Partition Name [32] : Toast 3.5.7 Partition
+Partition Type [32] : Apple_HFS
+Start of data in partition [4] : 0
+Size of data in partition [4] :000b 4475
+Status of Partition [4] : 0000 0013
+Boot code sector [4] : 0
+Boot code length [4] : 0
+Bootloader address [4] : 0
+reserved [4] : 0
+boot code entry point [4] : 0
+reserved [4] : 0
+boot code checksum [4] : 0
+processor type [16] : 0
+reserved [376] : 0
+
+
+Process for repair.
+1. Trim everything other than the data partition from the start of the bad image :
+dd if=./MacOS8.1.toast of=./trimmedMacOS8.1.toast bs=512 skip=37
+
+2. Join the a good partition table / drivers to the start
+cat ./driver ./trimmedMacOS8.1.toast > MacOS8.1Fix.iso
+
+The "driver" file needs fixing. a) it has an empty partition. This can be removed,
+by zeroing out its entry, and updating the partition count on each entry (from 9 
+to 8 in this instance).
+
+The Entry for the data partition needs its length correcting and the data length - its start location
+should be just fine.
+
+The partition status may need updating.
+
+Original status 0x0000 0013 means : 
+AUX valid, AUX allocated, AUX readable
+
+Driver original status 0x4000 035F means :
+Mount at startup, chain driver, real driver,
+boot code is position indep (AUX), readable (AUX), valid AUX, entry allocated (AUX),
+in use (AUX), contains boot AUX, 
+ 
+
+First visible data in partition on sector 4138 original image
+
+First try - the drivers were one sector short of a partition, which put the data partition
+one sector earlier than it should have been. Fixed in driver now, and implemented in 
+driverModified.
+
+Second try mounts, but does not boot - same as when I used toast before.
+
+Third try, I'm replacing the first two bytes (0000) with 4c4b
+
+
+PowerBook G3 8.1 image is different, no partition table and it is just a raw partition.
+Additionally, the first two bytes are good. This likely just needs a partition table,
+drivers, appending, and the length inputting.
+Alternatively, this can probably be turned into a bootable image using toast and 5.3.1
+but that driver version is possibly not compatible with the PB G3?
+
