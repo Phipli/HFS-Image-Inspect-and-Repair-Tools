@@ -9,7 +9,7 @@
 # 1 February, 2024
 # By Phipli
 #
-# Written for Python 3.10.12
+# Written for bash
 #
 # Version History
 #
